@@ -1,0 +1,69 @@
+apiVersion: agones.dev/v1
+kind: Fleet
+
+metadata:
+  name: tower-defence
+  namespace: emortalmc
+
+spec:
+  scheduling: Distributed
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+
+  template:
+    spec:
+      ports:
+        - name: default
+          portPolicy: Dynamic
+          containerPort: 25565
+          protocol: TCP
+
+      health:
+        initialDelaySeconds: 5
+        periodSeconds: 15
+        failureThreshold: 2
+
+      template:
+        metadata:
+          labels:
+            emortal.dev/mc-metrics-enabled: "true"
+        spec:
+          containers:
+            - name: tower-defence
+              image: ghcr.io/zakshearman/tower-defence:34230df9ea2ed7652ec6213d057a6d8d80b224e7
+              command: [ "/bin/sh", "-c", "java -XX:+UseZGC -Xms192M -Xmx192M -jar /app/tower_defence.jar" ]
+
+              resources:
+                requests:
+                  cpu: 300m
+                  memory: 384Mi
+                limits:
+                  cpu: "1"
+                  memory: 384Mi
+
+              ports:
+                - containerPort: 8081
+                  name: metrics
+                  protocol: TCP
+
+              env:
+                - name: VELOCITY_FORWARDING_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: velocity-forwarding-token
+                      key: forwarding.secret
+                      optional: false
+                - name: KAFKA_HOST
+                  value: default-kafka-bootstrap
+                - name: KAFKA_PORT
+                  value: "9092"
+                - name: NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: FLEET_NAME
+                  value: tower-defence

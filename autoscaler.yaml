@@ -1,0 +1,14 @@
+apiVersion: autoscaling.agones.dev/v1
+kind: FleetAutoscaler
+metadata:
+  name: tower-defence
+  namespace: emortalmc
+
+spec:
+  fleetName: tower-defence
+  policy:
+    type: Buffer
+    buffer:
+      bufferSize: 1
+      minReplicas: 2
+      maxReplicas: 10
